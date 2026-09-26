@@ -11,6 +11,7 @@ st.set_page_config(
     page_icon="🤖",
     layout="centered"
 )
+st.image("logo.png", width=250)
 
 # --- BEAUTIFUL CSS ---
 st.markdown("""
