@@ -93,7 +93,7 @@ if uploaded_file:
                 try:
                     prompt = f"PDF:\n{pdf_text[:15000]}\n\nTask: {question}\nGive formatted answer"
                     # LINE 115 - FIXED MODEL NAME HERE
-                    response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+                    response = client.models.generate_content(model="gemini-3.8-flash", contents=prompt)
                     ans = response.text
                     st.session_state.chat_history.append({
                         "question": question,
