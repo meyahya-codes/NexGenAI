@@ -62,7 +62,7 @@ if uploaded_file:
         with st.spinner("🤖 NexGenAI is thinking..."):
             prompt = f"Based on this PDF content:\n\n{text[:15000]}\n\nQuestion: {question}\nAnswer clearly:"
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=prompt
             )
             answer = response.text
