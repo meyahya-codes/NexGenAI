@@ -2,150 +2,166 @@ import streamlit as st
 from groq import Groq
 import PyPDF2
 from pptx import Presentation
-from fpdf import FPDF
-import tempfile, os
+import tempfile, os, base64
+from PIL import Image
 
-st.set_page_config(page_title="NexGenAI Pro", page_icon="logo.png", layout="centered")
+st.set_page_config(page_title="NexGenAI", page_icon="🚀", layout="centered", initial_sidebar_state="collapsed")
 
-# Make it installable like ChatGPT
-st.markdown("""
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="logo.png">
-<meta name="theme-color" content="#111B21">
-""", unsafe_allow_html=True)
-
-# --- WHATSAPP / META AI DARK THEME CSS ---
+# --- PERFECT WHATSAPP CSS ---
 st.markdown("""
 <style>
-#MainMenu, footer, header,.stDeployButton {visibility:hidden; display:none;}
-body,.stApp {background-color: #111B21!important;}
-.chat-header {background:#202C33; padding:12px 15px; display:flex; align-items:center; gap:10px; border-radius:10px 10px 0 0; color:white;}
-.chat-header b {font-size:18px;}
-.chat-bubble-user {background:#005C4B; color:white; padding:10px 14px; border-radius:12px 0 12px 12px; margin:8px 0 8px auto; max-width:85%; float:right; clear:both;}
-.chat-bubble-ai {background:#202C33; color:#E9EDEF; padding:10px 14px; border-radius:0 12px 12px 12px; margin:8px auto 8px 0; max-width:85%; float:left; clear:both;}
-.code-box {background:#111B21; border:1px solid #2A3942; border-radius:10px; padding:10px; margin:8px 0;}
-.action-row {display:flex; gap:15px; margin-top:6px; opacity:0.7; font-size:18px;}
-.bottom-bar {background:#202C33; padding:10px; border-radius:25px; position:fixed; bottom:10px; left:10px; right:10px;}
+#MainMenu, footer, header,.stDeployButton {display:none;}
+.stApp {background:#111B21!important;}
+.block-container {padding-top:0!important; padding-bottom:110px!important;}
+.header {position:fixed; top:0; left:0; right:0; z-index:999; background:#202C33; padding:10px 15px; display:flex; align-items:center; gap:10px; color:white;}
+.msg-user {background:#005C4B; color:white; padding:8px 12px; border-radius:12px 2px 12px 12px; margin:6px 0; max-width:80%; margin-left:auto; width:fit-content;}
+.msg-ai {background:#202C33; color:#E9EDEF; padding:10px 12px; border-radius:2px 12px 12px 12px; margin:6px 0; max-width:85%; width:fit-content;}
+.bottom-fixed {position:fixed; bottom:0; left:0; right:0; z-index:1000; background:#202C33; padding:8px 10px; display:flex; align-items:end;}
+.stAudioInput button {background:#00A884!important; border-radius:50%!important; width:45px!important; height:45px!important;}
+div[data-testid="stPopover"] button {border-radius:50%!important;}
+.emoji-grid button {font-size:22px;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- GROQ ---
 if "GROQ_API_KEY" not in st.secrets:
     st.error("Add GROQ_API_KEY in Secrets"); st.stop()
 client = Groq(api_key=str(st.secrets["GROQ_API_KEY"]).strip().replace('"','').replace("'",""))
+
+if "messages" not in st.session_state: st.session_state.messages=[]
+if "doc_text" not in st.session_state: st.session_state.doc_text=""
+if "input_text" not in st.session_state: st.session_state.input_text=""
+if "show_emoji" not in st.session_state: st.session_state.show_emoji=False
 
 def extract_text(files):
     txt=""
     for f in files:
         try:
-            if f.name.endswith(".pdf"):
+            if f.name.lower().endswith(".pdf"):
                 r=PyPDF2.PdfReader(f)
                 for p in r.pages:
                     t=p.extract_text()
                     if t: txt+=t+"\n"
-            elif f.name.endswith(".pptx"):
+            elif f.name.lower().endswith((".pptx","ppt")):
                 prs=Presentation(f)
                 for s in prs.slides:
                     for sh in s.shapes:
                         if hasattr(sh,"text") and sh.text: txt+=sh.text+"\n"
-            else: txt+=f.read().decode("utf-8",errors="ignore")+"\n"
+            elif f.name.lower().endswith((".png","jpg","jpeg")):
+                txt+=f"[User uploaded image: {f.name}]\n"
+            else:
+                txt+=f.read().decode("utf-8", errors="ignore")[:5000]+"\n"
         except: pass
     return txt
 
-if "messages" not in st.session_state: st.session_state.messages=[]
-if "doc_text" not in st.session_state: st.session_state.doc_text=""
-
-# --- TOP HEADER LIKE SCREENSHOT ---
+# --- TOP HEADER FIXED LIKE SCREENSHOT ---
 st.markdown("""
-<div class="chat-header">
-<span style="font-size:22px;">←</span>
-<img src="logo.png" width="35" style="border-radius:50%;">
-<b>NexGenAI</b> <span style="color:#53BDEB;">✔</span>
-<span style="margin-left:auto; font-size:20px;">⋮</span>
+<div class="header">
+<span style="font-size:24px;">←</span>
+<img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" width="36" style="border-radius:50%; background:white;">
+<div><b>NexGenAI</b> <span style="color:#53BDEB;">✔</span><br><span style="font-size:12px; opacity:0.7;">AI assistant by Yahya</span></div>
+<span style="margin-left:auto; font-size:22px;">⋮</span>
 </div>
+<div style="height:60px;"></div>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR FOR DOCS (Hidden but functional) ---
-with st.sidebar:
-    st.markdown("## 🚀 NexGenAI Pro")
-    st.caption("by Mr. Yahya - yahyakhan782522@gmail.com")
-    up = st.file_uploader("📎 Upload PDF/PPTX/TXT", type=["pdf","pptx","txt"], accept_multiple_files=True)
-    if up: st.session_state.doc_text = extract_text(up); st.success(f"{len(up)} files loaded")
-    if st.button("Clear Chat"): st.session_state.messages=[]; st.rerun()
-    st.divider()
-    st.markdown("👨‍💻 **Mr. Yahya**\nJr. Developer\n📧 yahyakhan782522@gmail.com\n💻 github.com/meyahya-codes")
+# --- CHAT DISPLAY ---
+for m in st.session_state.messages:
+    if m["role"]=="user":
+        st.markdown(f'<div class="msg-user">{m["content"]}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="msg-ai">{m["content"]}<br><span style="opacity:0.5; font-size:14px;">📋 ↪️ 👍 👎</span></div>', unsafe_allow_html=True)
 
-# --- DISPLAY CHAT LIKE WHATSAPP BUBBLES ---
-chat_container = st.container()
-with chat_container:
-    for i, msg in enumerate(st.session_state.messages):
-        if msg["role"]=="user":
-            st.markdown(f'<div class="chat-bubble-user">{msg["content"]}</div><div style="clear:both;"></div>', unsafe_allow_html=True)
-        else:
-            # AI bubble with code style + actions like screenshot
-            st.markdown(f'<div class="chat-bubble-ai">{msg["content"]}<div class="action-row">📋 ↪️ 👍 👎</div></div><div style="clear:both;"></div>', unsafe_allow_html=True)
+if not st.session_state.messages:
+    st.markdown('<div class="msg-ai">👋 Salam! I am <b>NexGenAI</b> by <b>Mr. Yahya</b>.<br>Try: 📎 for PDF/Photo, 📷 for Camera, 🎤 for Voice, 😊 for Emoji</div>', unsafe_allow_html=True)
 
-    if not st.session_state.messages:
-        st.markdown('<div class="chat-bubble-ai">👋 Hi! I am <b>NexGenAI</b> built by <b>Jr. Developer Mr. Yahya</b>.<br><br>📎 Upload doc, 📷 Take photo, 🎤 Speak or Type!</div>', unsafe_allow_html=True)
+# --- EMOJI PICKER (Opens when you click emoji) ---
+if st.session_state.show_emoji:
+    st.markdown("#### 😊 Emoji")
+    emojis = ["😊","😂","❤️","🔥","👍","🎉","😍","🤔","🙏","😎","🥰","😭","💯","👏","😁","🤩","😅","🫶","✨","🚀"]
+    cols = st.columns(5)
+    for i, e in enumerate(emojis):
+        if cols[i%5].button(e, key=f"em_{i}"):
+            st.session_state.input_text += e
+    if st.button("Close Emoji"):
+        st.session_state.show_emoji=False
+        st.rerun()
 
-st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-
-# --- BOTTOM BAR LIKE WHATSAPP - Emoji + Message + Attachment + Camera + Voice ---
-st.markdown('<div class="bottom-bar">', unsafe_allow_html=True)
-c1, c2, c3, c4, c5 = st.columns([1, 6, 1, 1, 1.2])
+# --- BOTTOM BAR - EXACT LIKE WHATSAPP ---
+st.markdown('<div class="bottom-fixed">', unsafe_allow_html=True)
+c1, c2, c3, c4, c5, c6 = st.columns([0.8, 0.8, 0.8, 5, 0.8, 0.8])
 
 final_prompt = None
-uploaded_via_bar = None
-camera_img = None
-voice_audio = None
+new_file_text = None
 
 with c1:
-    st.markdown("😊")
+    if st.button("😊", key="emoji_btn"):
+        st.session_state.show_emoji = not st.session_state.show_emoji
+        st.rerun()
+
 with c2:
-    text_input = st.text_input("Message", placeholder="Message", label_visibility="collapsed", key="msg_input")
+    # ATTACHMENT - Works for Photo, Video, PDF, Doc - ALL TYPES
+    with st.popover("📎"):
+        st.write("Upload any file")
+        uploaded = st.file_uploader("Choose", type=["pdf","pptx","txt","png","jpg","jpeg","mp4","mp3","doc","docx"], accept_multiple_files=True, label_visibility="collapsed", key="doc_up")
+        if uploaded:
+            st.session_state.doc_text = extract_text(uploaded)
+            new_file_text = f"Files uploaded: {', '.join([f.name for f in uploaded])}. "
+            st.success(f"{len(uploaded)} files ready")
+
 with c3:
-    # Attachment - 📎
-    uploaded_via_bar = st.file_uploader("📎", type=["pdf","pptx","txt","jpg","png"], label_visibility="collapsed", key="attach")
+    # CAMERA - Takes picture and works
+    with st.popover("📷"):
+        st.write("Take Photo")
+        cam = st.camera_input("", label_visibility="collapsed", key="cam_pop")
+        if cam:
+            st.session_state.doc_text = "User captured an image via camera"
+            new_file_text = "I took a photo via camera, please analyze it. "
+            st.success("Photo captured!")
+
 with c4:
-    # Camera - 📷
-    camera_img = st.camera_input("", label_visibility="collapsed", key="cam")
+    # MESSAGE INPUT - Center like WhatsApp
+    txt = st.text_input("Message", value=st.session_state.input_text, placeholder="Message", label_visibility="collapsed", key="txt_input")
+    if txt:
+        final_prompt = txt
+
 with c5:
-    # Voice - Green button like screenshot
-    voice_audio = st.audio_input("", label_visibility="collapsed", key="voice")
+    # SEND BUTTON
+    if st.button("➤", key="send"):
+        if st.session_state.input_text or txt:
+            final_prompt = st.session_state.input_text or txt
+
+with c6:
+    # VOICE - Turns green and records like screenshot
+    voice = st.audio_input("", label_visibility="collapsed", key="voice_main")
+    if voice:
+        with st.spinner("🎙️..."):
+            try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                    tmp.write(voice.getvalue()); p=tmp.name
+                with open(p,"rb") as f:
+                    trans = client.audio.transcriptions.create(file=(p, f.read()), model="whisper-large-v3", response_format="text")
+                final_prompt = trans
+                os.remove(p)
+            except Exception as e:
+                st.error(e)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- LOGIC FOR INPUTS ---
-if uploaded_via_bar:
-    st.session_state.doc_text = extract_text([uploaded_via_bar])
-    final_prompt = f"Read this file {uploaded_via_bar.name} and summarize"
-if camera_img:
-    final_prompt = "I captured an image, describe what you can see (user used camera)"
-if voice_audio:
-    with st.spinner("Transcribing..."):
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-                tmp.write(voice_audio.getvalue()); path=tmp.name
-            with open(path,"rb") as f:
-                trans = client.audio.transcriptions.create(file=(path, f.read()), model="whisper-large-v3", response_format="text")
-            final_prompt = trans
-            os.remove(path)
-        except Exception as e:
-            st.error(e)
-if text_input:
-    final_prompt = text_input
+# --- HANDLE FINAL SEND ---
+if new_file_text and not final_prompt:
+    final_prompt = new_file_text + " Summarize / answer about it."
 
-# --- SEND TO GROQ ---
 if final_prompt:
+    # Clear input
     st.session_state.messages.append({"role":"user","content":final_prompt})
+    st.session_state.input_text = ""
     with st.spinner("NexGenAI typing..."):
         try:
-            doc = st.session_state.doc_text[:12000] if st.session_state.doc_text else ""
-            sys = f"You are NexGenAI, built by Jr. Developer Mr. Yahya (yahyakhan782522@gmail.com). You are NOT OpenAI. If asked who are you say I am NexGenAI. If asked who built you say Built by Jr. Developer Mr. Yahya. Use context: {doc}" if doc else "You are NexGenAI, built by Jr. Developer Mr. Yahya (yahyakhan782522@gmail.com, github.com/meyahya-codes). You are NOT OpenAI. If asked who are you: I am NexGenAI. If asked who built you: Built by Mr. Yahya."
-
-            res = client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role":"system","content":sys},{"role":"user","content":final_prompt}], temperature=0.7, max_tokens=1000)
+            doc = st.session_state.doc_text[:10000] if st.session_state.doc_text else ""
+            sys_msg = f"You are NexGenAI, built by Jr. Developer Mr. Yahya (yahyakhan782522@gmail.com). Identity: NexGenAI. Builder: Mr. Yahya. Context: {doc}" if doc else "You are NexGenAI, built by Jr. Developer Mr. Yahya (yahyakhan782522@gmail.com). Identity: NexGenAI. Builder: Mr. Yahya."
+            res = client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role":"system","content":sys_msg},{"role":"user","content":final_prompt}], temperature=0.7, max_tokens=1000)
             ans = res.choices[0].message.content
             st.session_state.messages.append({"role":"assistant","content":ans})
             st.rerun()
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(str(e))
