@@ -15,7 +15,7 @@ with st.sidebar:
     if st.button("🗑️ Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
-    st.success("✅ Groq Llama 3.3 70B Ready")
+    model="llama3-70b-8192",
 
 # --- Load Groq Client ---
 if "GROQ_API_KEY" not in st.secrets:
