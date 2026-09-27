@@ -70,7 +70,7 @@ if prompt := st.chat_input("Ask anything..."):
             try:
                 context = st.session_state.doc_text[:15000]
                 completion = client.chat.completions.create(
-                    model="llama3-70b-8192",
+                    model="openai/gpt-oss-20b",
                     messages=[
                         {"role": "system", "content": f"You are NexGenAI assistant. Use this document to answer: {context}"},
                         {"role": "user", "content": prompt}
