@@ -14,7 +14,7 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.doc_text = ""
         st.rerun()
-    st.info("Model: Llama3 70B (Groq) - Free & Fast")
+    st.info("Model: NexGenAI Pro - GPT-OSS 20B")
 
 # --- GROQ CLIENT ---
 if "GROQ_API_KEY" not in st.secrets:
@@ -72,7 +72,7 @@ if prompt := st.chat_input("Ask anything..."):
                 completion = client.chat.completions.create(
                     model="openai/gpt-oss-20b",
                     messages=[
-                        {"role": "system", "content": f"You are NexGenAI assistant. Use this document to answer: {context}"},
+                        {"role": "system", "content": f"You are NexGenAI Pro, created by Yahya. You are NOT from OpenAI, NOT ChatGPT. You were built by Yahya for NexGenAI startup. Never say OpenAI. Use this document to answer: {context}"},
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.7,
