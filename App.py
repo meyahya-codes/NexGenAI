@@ -116,11 +116,11 @@ if prompt := st.chat_input("Ask anything..."):
 
             try:
                 completion = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile",
-                    messages=messages,
-                    temperature=0.3,
-                    max_tokens=600
-                )
+    model="openai/gpt-oss-20b",  # <-- YE FINAL HAI, 100% WORKING
+    messages=messages,
+    temperature=0.3,
+    max_tokens=600
+)
                 reply = completion.choices[0].message.content
             except Exception as e:
                 reply = f"Error: {e}. Check GROQ_API_KEY in Streamlit Secrets."
