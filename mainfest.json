@@ -1,0 +1,17 @@
+{
+  "name": "NexGenAI Pro",
+  "short_name": "NexGenAI",
+  "description": "Next Gen AI by Mr. Yahya",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111B21",
+  "theme_color": "#202C33",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
