@@ -72,7 +72,7 @@ if prompt := st.chat_input("Ask anything..."):
                 completion = client.chat.completions.create(
                     model="openai/gpt-oss-20b",
                     messages=[
-                        {"role": "system", "content": f"You are NexGenAI Pro, created by Yahya. You are NOT from OpenAI, NOT ChatGPT. You were built by Yahya for NexGenAI startup. Never say OpenAI. Use this document to answer: {context}"},
+                        {"role": "system", "content": f"You are NexGenAI Pro, created by jr.developer MR. Yahya. You are NOT from OpenAI, NOT ChatGPT. You were built by Yahya for NexGenAI startup. Never say OpenAI. Use this document to answer: {context}"},
                         {"role": "user", "content": prompt}
                     ],
                     temperature=0.7,
