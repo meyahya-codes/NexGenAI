@@ -2,143 +2,106 @@ import streamlit as st
 from groq import Groq
 import PyPDF2
 from pptx import Presentation
-from datetime import datetime
 
-st.set_page_config(page_title="NexGenAI Pro", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="NexGenAI Pro", page_icon="🚀", layout="centered")
 
-# --- CUSTOM CSS FOR PRO LOOK ---
+# --- HIDE STREAMLIT BRANDING - ONLY YOUR BRANDING ---
 st.markdown("""
 <style>
-.big-title {font-size:38px; font-weight:800; color:#00FFAB;}
-.small {color:gray;}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+.stDeployButton {display:none;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR ONLY FOR YOU ---
 with st.sidebar:
-    st.markdown('<div class="big-title">🚀 NexGenAI</div>', unsafe_allow_html=True)
-    st.caption("AI Assistant Pro")
+    st.markdown("## 🚀 NexGenAI Pro")
+    st.caption("by Mr. Yahya")
     st.divider()
 
-    st.header("📁 Upload Document")
-    uploaded_files = st.file_uploader("PDF, PPTX, TXT", type=["pdf","pptx","txt"], accept_multiple_files=True, label_visibility="collapsed")
+    st.markdown("### 📁 Upload Doc")
+    uploaded_files = st.file_uploader("", type=["pdf","pptx","txt"], accept_multiple_files=True, label_visibility="collapsed")
 
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
+    if st.button("Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.session_state.doc_text = ""
         st.rerun()
 
     st.divider()
-    st.success(f"Model: GPT-OSS 20B (Groq)")
-    if uploaded_files:
-        st.info(f"✅ {len(uploaded_files)} file(s) loaded")
-
-    st.divider()
-    st.header("👨‍💻 About Developer")
+    st.markdown("### 👨‍💻 Developer")
     st.markdown("""
     **Mr. Yahya**
-    Jr. Developer | AI Enthusiast
-    Founder of **NexGenAI Pro**
+    Jr. Developer & Founder
 
-    📧 Email: `meyahya.codes@gmail.com`
-    💻 GitHub: `github.com/meyahya-codes`
-    🌐 Project: `nexgenai-pro.streamlit.app`
-
-    Passionate about building AI tools for everyone.
+    📧 yahyakhan782522@gmail.com
+    💻 github.com/meyahya-codes
     """)
-    st.divider()
-    st.caption(f"© {datetime.now().year} NexGenAI Pro. All rights reserved.")
 
-# --- GROQ CLIENT ---
+# --- API KEY ---
 if "GROQ_API_KEY" not in st.secrets:
-    st.error("Add GROQ_API_KEY in Streamlit Secrets")
+    st.error("Add GROQ_API_KEY in Secrets")
     st.stop()
-
 api_key = str(st.secrets["GROQ_API_KEY"]).strip().replace('"','').replace("'","")
 client = Groq(api_key=api_key)
 
 def extract_text(files):
-    text_data = ""
+    txt = ""
     for f in files:
         try:
             if f.name.endswith(".pdf"):
                 reader = PyPDF2.PdfReader(f)
                 for p in reader.pages:
                     t = p.extract_text()
-                    if t: text_data += t + "\n"
+                    if t: txt += t + "\n"
             elif f.name.endswith(".pptx"):
                 prs = Presentation(f)
                 for slide in prs.slides:
-                    for shape in slide.shapes:
-                        if hasattr(shape, "text") and shape.text:
-                            text_data += shape.text + "\n"
-            elif f.name.endswith(".txt"):
-                text_data += f.read().decode("utf-8", errors="ignore") + "\n"
-        except:
-            pass
-    return text_data
+                    for sh in slide.shapes:
+                        if hasattr(sh,"text") and sh.text: txt+=sh.text+"\n"
+            else:
+                txt+=f.read().decode("utf-8", errors="ignore")+"\n"
+        except: pass
+    return txt
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "doc_text" not in st.session_state:
-    st.session_state.doc_text = ""
+if "messages" not in st.session_state: st.session_state.messages=[]
+if "doc_text" not in st.session_state: st.session_state.doc_text=""
 
 if uploaded_files:
     st.session_state.doc_text = extract_text(uploaded_files)
 
-# --- MAIN HEADER ---
-col1, col2 = st.columns([1,5])
-with col1:
-    st.markdown("# 🚀")
-with col2:
-    st.title("NexGenAI Pro")
-    st.caption("Your Personal AI - Chat with Docs or Just Chat like ChatGPT")
+# --- MAIN ---
+st.title("🚀 NexGenAI Pro")
+st.caption("Ask anything - With or without document")
 
-# --- SHOW HISTORY ---
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- CHAT INPUT - WORKS ALWAYS ---
-if prompt := st.chat_input("Ask anything about your docs or general..."):
+if prompt := st.chat_input("Ask anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    with st.chat_message("user"): st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("NexGenAI is thinking..."):
+        with st.spinner("Thinking..."):
             try:
-                if st.session_state.doc_text:
-                    context = st.session_state.doc_text[:15000]
-                    system_prompt = f"""You are NexGenAI, a powerful AI assistant created by Jr. Developer Mr. Yahya.
-                    - If asked 'who are you': Say 'I am NexGenAI, a next-generation AI assistant built by Jr. Developer Mr. Yahya.'
-                    - If asked 'who built you': Say 'I was built by Jr. Developer Mr. Yahya, founder of NexGenAI Pro. I am NOT from OpenAI.'
-                    - Never say you are from OpenAI, Google, or Meta. You are NexGenAI.
-                    - Developer Email: meyahya.codes@gmail.com, GitHub: github.com/meyahya-codes
-                    - Use this DOCUMENT to answer: {context}
-                    """
+                doc = st.session_state.doc_text[:12000] if st.session_state.doc_text else ""
+                if doc:
+                    sys = f"You are NexGenAI, built by Jr. Developer Mr. Yahya (yahyakhan782522@gmail.com, github.com/meyahya-codes). You are NOT OpenAI. If asked who are you: I am NexGenAI. If asked who built you: Built by Jr. Developer Mr. Yahya. Answer using doc: {doc}"
                 else:
-                    system_prompt = """You are NexGenAI, a powerful AI assistant created by Jr. Developer Mr. Yahya.
-                    - If asked 'who are you': Say 'I am NexGenAI, a next-generation AI assistant built by Jr. Developer Mr. Yahya.'
-                    - If asked 'who built you': Say 'I was built by Jr. Developer Mr. Yahya, founder of NexGenAI Pro. Email: meyahya.codes@gmail.com, GitHub: meyahya-codes. I am NOT from OpenAI.'
-                    - Never claim OpenAI. You are NexGenAI Pro.
-                    - Answer helpfully like ChatGPT.
-                    """
+                    sys = "You are NexGenAI, built by Jr. Developer Mr. Yahya, Email: yahyakhan782522@gmail.com, GitHub: meyahya-codes. If asked who are you: I am NexGenAI, a next-gen AI assistant. If asked who built you: Built by Jr. Developer Mr. Yahya. You are NOT from OpenAI. Answer helpfully."
 
-                completion = client.chat.completions.create(
+                res = client.chat.completions.create(
                     model="openai/gpt-oss-20b",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=1200
+                    messages=[{"role":"system","content":sys},{"role":"user","content":prompt}],
+                    temperature=0.7, max_tokens=1200
                 )
-                answer = completion.choices[0].message.content
-                st.markdown(answer)
-                st.session_state.messages.append({"role": "assistant", "content": answer})
+                ans = res.choices[0].message.content
+                st.markdown(ans)
+                st.session_state.messages.append({"role":"assistant","content":ans})
             except Exception as e:
                 st.error(f"Error: {e}")
 
 if not st.session_state.messages:
-    st.info("👋 Hi! I'm NexGenAI built by Mr. Yahya. Upload a doc OR just ask anything!")
+    st.info("👋 I'm NexGenAI Pro, built by Mr. Yahya. Upload file or just chat!")
