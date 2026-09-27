@@ -98,8 +98,39 @@ with c5:
 st.markdown('</div>', unsafe_allow_html=True)
 
 if final:
+    # --- FIX 1: Direct Identity Answer - No API call = No Loop ---
+    lower = final.lower().strip()
+    if lower in ["who are you", "who are you?", "who r u", "what is your name", "tum kaun ho", "ap kaun ho"]:
+        ans = "I am **NexGenAI** 🚀 built by **Jr. Developer Mr. Yahya**. \n\n📧 yahyakhan782522@gmail.com\n💻 github.com/meyahya-codes"
+        st.session_state.messages.append({"role":"user","content":final})
+        st.session_state.messages.append({"role":"assistant","content":ans})
+        st.rerun()
+
+    if "who built you" in lower or "who made you" in lower or "kisne banaya" in lower:
+        ans = "I was built by **Jr. Developer Mr. Yahya** - Founder of NexGenAI Pro. 🚀"
+        st.session_state.messages.append({"role":"user","content":final})
+        st.session_state.messages.append({"role":"assistant","content":ans})
+        st.rerun()
+
+    # --- FIX 2: Normal Chat with LIMIT ---
     st.session_state.messages.append({"role":"user","content":final})
-    sys = f"You are NexGenAI by Mr. Yahya. Context: {st.session_state.doc_text}" if st.session_state.doc_text else "You are NexGenAI by Mr. Yahya."
-    res = client.chat.completions.create(model="openai/gpt-oss-20b", messages=[{"role":"system","content":sys},{"role":"user","content":final}], max_tokens=800)
-    st.session_state.messages.append({"role":"assistant","content":res.choices[0].message.content})
-    st.rerun()
+    try:
+        ctx = st.session_state.doc_text
+        sys = f"You are NexGenAI by Mr. Yahya. Answer short, max 100 words. Identity: NexGenAI. Builder: Mr. Yahya. Context: {ctx}" if ctx else "You are NexGenAI by Mr. Yahya. Answer short, max 100 words. If asked who are you: I am NexGenAI. If asked who built you: Built by Mr. Yahya. Never say OpenAI or Meta."
+
+        res = client.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            messages=[{"role":"system","content":sys},{"role":"user","content":final}],
+            max_tokens=400, # LIMIT - isse loop band
+            temperature=0.5,
+            top_p=0.9,
+            stop=["<|eot|>", "<|end|>"] # Force stop
+        )
+        ans = res.choices[0].message.content
+        # Extra safety - cut if too long
+        if len(ans) > 1000:
+            ans = ans[:1000] + "..."
+        st.session_state.messages.append({"role":"assistant","content":ans})
+        st.rerun()
+    except Exception as e:
+        st.error(str(e))
